@@ -77,7 +77,7 @@ class AOPFactory extends Factory
     protected static function getDBPoolCoroutine(IPoolCoroutine $coroutine, $coreBase)
     {
         $coroutineWrapper = new Wrapper($coroutine);
-        $coroutineWrapper->registerOnBefore(function($method, $arguments) use ($coreBase) {
+        $coroutineWrapper->registerOnBefore(function ($method, $arguments) use ($coreBase) {
             $context = $coreBase->getContext();
             array_unshift($arguments, $context);
             return [

@@ -123,7 +123,7 @@ class CoroutineRedisProxy implements IPoolCoroutine
      *
      * @throws
      */
-    public function evalMock($context, string $script, array $args = array(), int $numKeys = 0)
+    public function evalMock($context, string $script, array $args = [], int $numKeys = 0)
     {
         $keys         = array_slice($args, 0, $numKeys);
         $evalMockArgs = array_slice($args, $numKeys);
@@ -134,7 +134,8 @@ class CoroutineRedisProxy implements IPoolCoroutine
             }
         }
 
-        if (getInstance()->processType == Marco::PROCESS_TASKER) {//task进程
+        if (getInstance()->processType == Marco::PROCESS_TASKER) {
+            //task进程
             $commandData = [$context, $script, array_merge($keys, $evalMockArgs), $numKeys];
         } else {
             $commandData = array_merge([$context, $script, $numKeys], $keys, $evalMockArgs);
@@ -249,7 +250,8 @@ class CoroutineRedisProxy implements IPoolCoroutine
         }
         // value serialize end
 
-        if (getInstance()->processType == Marco::PROCESS_TASKER) {//如果是task进程自动转换为同步模式
+        if (getInstance()->processType == Marco::PROCESS_TASKER) {
+            //如果是task进程自动转换为同步模式
             /**
              * @var Context $context
              */

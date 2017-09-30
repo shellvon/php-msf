@@ -65,7 +65,7 @@ class Pool
         $poolName = trim($class, '\\');
 
         if (!$poolName) {
-            return null;
+            return;
         }
 
         $pool     = $this->map[$poolName] ?? null;

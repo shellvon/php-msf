@@ -512,48 +512,30 @@ class Client extends Core
      */
     public static function parseUrl($url)
     {
-        $parseUrlResult = parse_url($url);
-        if ($parseUrlResult === false) {
-            return false;
+        $defaultUrlComponents = [
+            'scheme' => 'http', // protocol, eg: http
+            'user' => null, //  auth user name.
+            'pass' => null, // auth user password.
+            'host' => null, // the host name.
+            'path' => '/',  // the default path.
+            'query' => '',   // query string.
+            'fragment' => null, // the "fragment" portion of the URL including the pound-sign (#)
+            'url' => $url,  // the origin of the URL.
+            'ssl' => false,
+            'port' => null,
+
+        ];
+        $components = \parse_url($url);
+        if ($components  === false) {
+            throw new \InvalidArgumentException('Malformed URL: ' . $url);
         }
-
-        if (empty($parseUrlResult['scheme'])) {
-            $parseUrlResult['scheme'] = 'http';
+        $isSecure = isset($components['scheme']) && $components['scheme'] === 'https';
+        $components['ssl'] = $isSecure;
+        if (empty($components['port'])) {
+            $components['port'] = $isSecure ? 443 : 80;
         }
-
-        if (empty($parseUrlResult['host'])) {
-            return false;
-        }
-
-        $parseUrlResult['url'] = $url;
-
-        if (empty($parseUrlResult['port'])) {
-            if ($parseUrlResult['scheme'] == 'http') {
-                $parseUrlResult['port'] = 80;
-                $parseUrlResult['ssl']  = false;
-            } else {
-                $parseUrlResult['port'] = 443;
-                $parseUrlResult['ssl']  = true;
-            }
-        } else {
-            if ($parseUrlResult['scheme'] == 'http') {
-                $parseUrlResult['ssl']  = false;
-            } else {
-                $parseUrlResult['ssl']  = true;
-            }
-        }
-
-        if (empty($parseUrlResult['path'])) {
-            $parseUrlResult['path'] = '/';
-        }
-
-        if (empty($parseUrlResult['query'])) {
-            $parseUrlResult['query'] = '';
-        } else {
-            $parseUrlResult['query'] = '?' . $parseUrlResult['query'];
-        }
-
-        return $parseUrlResult;
+        $components = array_replace($defaultUrlComponents, $components);
+        return $components;
     }
 
     /**
@@ -620,17 +602,17 @@ class Client extends Core
     {
         if (!empty(self::$dnsCache[$host])) {
             if (time() - self::$dnsCache[$host][1] > self::$dnsExpire) {
-                return null;
+                return;
             }
 
             if (self::$dnsCache[$host][2] > self::$dnsTimes) {
-                return null;
+                return;
             }
 
             self::$dnsCache[$host][2]++;
             return self::$dnsCache[$host][0];
         } else {
-            return null;
+            return;
         }
     }
 

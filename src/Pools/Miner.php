@@ -295,23 +295,23 @@ class Miner
      */
     public function __construct($mysqlPool = null)
     {
-        $this->option = array();
-        $this->select = array();
-        $this->delete = array();
-        $this->set = array();
-        $this->from = array();
-        $this->join = array();
-        $this->where = array();
-        $this->groupBy = array();
-        $this->having = array();
-        $this->orderBy = array();
-        $this->limit = array();
-        $this->intoColums = array();
-        $this->intoValues = array();
+        $this->option = [];
+        $this->select = [];
+        $this->delete = [];
+        $this->set = [];
+        $this->from = [];
+        $this->join = [];
+        $this->where = [];
+        $this->groupBy = [];
+        $this->having = [];
+        $this->orderBy = [];
+        $this->limit = [];
+        $this->intoColums = [];
+        $this->intoValues = [];
 
-        $this->setPlaceholderValues = array();
-        $this->wherePlaceholderValues = array();
-        $this->havingPlaceholderValues = array();
+        $this->setPlaceholderValues = [];
+        $this->wherePlaceholderValues = [];
+        $this->havingPlaceholderValues = [];
 
         $this->mysqlPool = $mysqlPool;
         $this->setAutoQuote(true);
@@ -376,11 +376,11 @@ class Miner
                 $this->set($columnName, $columnValue, $quote);
             }
         } else {
-            $this->set[] = array(
+            $this->set[] = [
                 'column' => $column,
                 'value' => $value,
                 'quote' => $quote
-            );
+            ];
         }
 
         return $this;
@@ -441,15 +441,15 @@ class Miner
         }
 
         if (is_string($criteria)) {
-            $criteria = array($criteria);
+            $criteria = [$criteria];
         }
 
-        $this->join[] = array(
+        $this->join[] = [
             'table' => $table,
             'criteria' => $criteria,
             'type' => $type,
             'alias' => $alias
-        );
+        ];
 
         return $this;
     }
@@ -531,13 +531,13 @@ class Miner
         $connector = self::LOGICAL_AND,
         $quote = null
     ) {
-        $criteria[] = array(
+        $criteria[] = [
             'column' => $column,
             'value' => $value,
             'operator' => $operator,
             'connector' => $connector,
             'quote' => $quote
-        );
+        ];
 
         return $this;
     }
@@ -673,7 +673,7 @@ class Miner
         $connector = self::LOGICAL_AND,
         $quote = null
     ) {
-        return $this->criteria($criteria, $column, array($min, $max), self::BETWEEN, $connector, $quote);
+        return $this->criteria($criteria, $column, [$min, $max], self::BETWEEN, $connector, $quote);
     }
 
     /**
@@ -710,7 +710,7 @@ class Miner
         $connector = self::LOGICAL_AND,
         $quote = null
     ) {
-        return $this->criteria($criteria, $column, array($min, $max), self::NOT_BETWEEN, $connector, $quote);
+        return $this->criteria($criteria, $column, [$min, $max], self::NOT_BETWEEN, $connector, $quote);
     }
 
     /**
@@ -1195,10 +1195,10 @@ class Miner
     private function getCriteriaString(
         array &$criteria,
         $usePlaceholders = true,
-        array &$placeholderValues = array()
+        array &$placeholderValues = []
     ) {
         $statement = "";
-        $placeholderValues = array();
+        $placeholderValues = [];
 
         $useConnector = false;
 
@@ -1556,7 +1556,7 @@ class Miner
     public function getIntoString($usePlaceholders = true)
     {
         $statement = '(';
-        $this->setPlaceholderValues = array();
+        $this->setPlaceholderValues = [];
 
         foreach ($this->intoColums as $colum) {
             $statement .= "`$colum`" . ", ";
@@ -1593,7 +1593,7 @@ class Miner
     public function getSetString($usePlaceholders = true, $includeText = true)
     {
         $statement = "";
-        $this->setPlaceholderValues = array();
+        $this->setPlaceholderValues = [];
 
         foreach ($this->set as $set) {
             $autoQuote = $this->getAutoQuote($set['quote']);
@@ -1870,13 +1870,14 @@ class Miner
         if ($sql == null) {
             $sql = $this->getStatement(false);
         }
-        if (getInstance()->processType == \PG\MSF\Marco::PROCESS_TASKER) {//如果是task进程自动转换为同步模式
+        if (getInstance()->processType == \PG\MSF\Marco::PROCESS_TASKER) {
+            //如果是task进程自动转换为同步模式
             $profileName = $this->mysqlPool->getAsynName() . '(' . str_replace("\n", " ", $sql) . ')';
             $this->getContext()->getLog()->profileStart($profileName);
 
             $this->mergeInto($this->mysqlPool->getSync($this->getContext()));
             $this->clear();
-            $data = array();
+            $data = [];
             switch ($sql) {
                 case 'commit':
                     $this->mysqlPool->getSync($this->getContext())->pdoCommitTrans();
@@ -2101,10 +2102,10 @@ class Miner
      */
     private function openCriteria(array &$criteria, $connector = self::LOGICAL_AND)
     {
-        $criteria[] = array(
+        $criteria[] = [
             'bracket' => self::BRACKET_OPEN,
             'connector' => $connector
-        );
+        ];
 
         return $this;
     }
@@ -2128,10 +2129,10 @@ class Miner
      */
     private function closeCriteria(array &$criteria)
     {
-        $criteria[] = array(
+        $criteria[] = [
             'bracket' => self::BRACKET_CLOSE,
             'connector' => null
-        );
+        ];
 
         return $this;
     }
@@ -2175,10 +2176,10 @@ class Miner
      */
     public function groupBy($column, $order = null)
     {
-        $this->groupBy[] = array(
+        $this->groupBy[] = [
             'column' => $column,
             'order' => $order
-        );
+        ];
 
         return $this;
     }
@@ -2273,10 +2274,10 @@ class Miner
      */
     public function orderBy($column, $order = self::ORDER_BY_ASC)
     {
-        $this->orderBy[] = array(
+        $this->orderBy[] = [
             'column' => $column,
             'order' => $order
-        );
+        ];
 
         return $this;
     }
@@ -2432,7 +2433,7 @@ class Miner
             // Reset the array in case the class variable was previously set to a
             // boolean value.
             if (!is_array($this->delete)) {
-                $this->delete = array();
+                $this->delete = [];
             }
 
             $this->delete[] = $table;
@@ -2446,27 +2447,27 @@ class Miner
      */
     public function clear()
     {
-        $this->option = array();
-        $this->select = array();
-        $this->delete = array();
-        $this->set = array();
-        $this->from = array();
-        $this->join = array();
-        $this->where = array();
-        $this->groupBy = array();
-        $this->having = array();
-        $this->orderBy = array();
-        $this->limit = array();
-        $this->insert = array();
-        $this->replace = array();
-        $this->update = array();
+        $this->option = [];
+        $this->select = [];
+        $this->delete = [];
+        $this->set = [];
+        $this->from = [];
+        $this->join = [];
+        $this->where = [];
+        $this->groupBy = [];
+        $this->having = [];
+        $this->orderBy = [];
+        $this->limit = [];
+        $this->insert = [];
+        $this->replace = [];
+        $this->update = [];
 
-        $this->intoColums = array();
-        $this->intoValues = array();
+        $this->intoColums = [];
+        $this->intoValues = [];
 
-        $this->setPlaceholderValues = array();
-        $this->wherePlaceholderValues = array();
-        $this->havingPlaceholderValues = array();
+        $this->setPlaceholderValues = [];
+        $this->wherePlaceholderValues = [];
+        $this->havingPlaceholderValues = [];
 
         $this->isInto = false;
     }
@@ -2512,7 +2513,8 @@ class Miner
         }
         $data['result'] = 1;
         $isSelect = false;
-        if ($sql != null) {//代表手动执行的sql
+        if ($sql != null) {
+            //代表手动执行的sql
             $str = strtolower(substr(trim($sql), 0, 6));
             if ($str == 'select') {
                 $isSelect = true;

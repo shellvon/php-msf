@@ -98,7 +98,7 @@ abstract class Base implements IBase
     public function getResult()
     {
         if ($this->isTimeout() && !$this->ioBack) {
-            return null;
+            return;
         }
 
         return $this->result;

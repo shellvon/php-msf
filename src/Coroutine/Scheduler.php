@@ -10,7 +10,6 @@ namespace PG\MSF\Coroutine;
 
 use PG\MSF\Base\Core;
 use PG\MSF\Controllers\Controller;
-use PG\MSF\Helpers\Context;
 
 /**
  * Class Scheduler

@@ -19,6 +19,17 @@ use PG\MSF\MSFServer;
 abstract class AsynPool implements IAsynPool
 {
     /**
+     * 链接过期时间秒数
+     */
+    const DEFAULT_EXPIRED_TIME = 3600;
+
+    /**
+     * 最大允许的链接数.
+     */
+    const MAX_ALLOWED_CONNECT_COUNT = 30;
+
+
+    /**
      * TOKEN最大值
      */
     const MAX_TOKEN = 655360;
@@ -67,6 +78,11 @@ abstract class AsynPool implements IAsynPool
      * @var int 待连接数量
      */
     protected $waitConnectNum = 0;
+
+    /**
+     * @var int 连接峰值.
+     */
+    protected $connectNum = 0;
 
     /**
      * @var AsynPoolManager 连接池管理器
@@ -153,17 +169,36 @@ abstract class AsynPool implements IAsynPool
     /**
      * 归还连接
      *
-     * @param mixed $client 连接对象
+     * @param \swoole_redis|\swoole_mysql $client 连接对象
      * @return $this
      */
     public function pushToPool($client)
     {
         $this->pool->push($client);
-        if (count($this->commands) > 0) {//有残留的任务
+        if (count($this->commands) > 0) {
+            //有残留的任务
             $command = $this->commands->shift();
             $this->execute($command);
         }
         return $this;
+    }
+
+    /**
+     * 判断某个client是否可以被允许复用.
+     *
+     * @param \swoole_mysql|\swoole_redis $client
+     *
+     * @return bool
+     */
+    protected function canReuse($client)
+    {
+        // 创建链接是否小于过期时间.
+        $isNew = (time() - $client->genTime) < static::DEFAULT_EXPIRED_TIME;
+        // 链接数: 当前链接峰值 + 待链接数
+        $connectCount = $this->connectNum + $this->waitConnectNum;
+        $canConn = $connectCount < static::MAX_ALLOWED_CONNECT_COUNT;
+
+        return $isNew  || $canConn;
     }
 
     /**

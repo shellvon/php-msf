@@ -194,8 +194,8 @@ abstract class Server extends Child
         // 日志初始化
         $this->log = new PGLog($this->name, $this->config->get('server.log', ['handlers' => []]));
 
-        register_shutdown_function(array($this, 'checkErrors'));
-        set_error_handler(array($this, 'displayErrorHandler'));
+        register_shutdown_function([$this, 'checkErrors']);
+        set_error_handler([$this, 'displayErrorHandler']);
 
         // 初始化路由器
         $routeTool = $this->config->get('server.route_tool', 'NormalRoute');

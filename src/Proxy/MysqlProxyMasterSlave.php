@@ -8,7 +8,6 @@
 
 namespace PG\MSF\Proxy;
 
-use PG\AOP\Wrapper;
 use PG\MSF\Helpers\Context;
 use PG\MSF\Pools\Miner;
 use PG\MSF\Pools\MysqlAsynPool;

@@ -22,7 +22,7 @@ use PG\AOP\MI;
 class Context extends AbstractContext
 {
     use MI;
-    
+
     /**
      * @var Input 请求输入对象
      */

@@ -40,11 +40,6 @@ class MysqlAsynPool extends AsynPool implements IPoolCoroutine
     public $bindPool;
 
     /**
-     * @var int 连接峰值
-     */
-    protected $mysqlMaxCount = 0;
-
-    /**
      * @var string 连接池标识
      */
     private $active;
@@ -99,53 +94,57 @@ class MysqlAsynPool extends AsynPool implements IPoolCoroutine
      */
     public function execute($data)
     {
+        /**
+         * @var \swoole_mysql $client
+         */
         $client = null;
-        $bindId = $data['bind_id'] ?? null;
-        if ($bindId != null) {//绑定
+        $bindId = null;
+        $sql = strtolower($data['sql']);
+
+        if (isset($data['bind_id'])) {
+            $bindId = $data['bind_id'];
             $client = $this->bindPool[$bindId]['client'] ?? null;
-            $sql = strtolower($data['sql']);
             if ($sql != 'begin' && $client == null) {
                 throw new Exception('error mysql affairs not begin.');
             }
         }
         if ($client == null) {
-            if (count($this->pool) == 0) {//代表目前没有可用的连接
+            if (count($this->pool) == 0) {
+                //代表目前没有可用的连接
                 $this->prepareOne();
                 $this->commands->push($data);
                 return;
-            } else {
-                $client = $this->pool->shift();
-                if ($client->isClose ?? false) {
-                    $this->reconnect($client);
-                    $this->commands->push($data);
-                    return;
-                }
-
-                if ($bindId != null) {//添加绑定
-                    $this->bindPool[$bindId]['client'] = $client;
-                }
+            }
+            $client = $this->pool->shift();
+            if ($client->isClose ?? false) {
+                $this->reconnect($client);
+                $this->commands->push($data);
+                return;
+            }
+            if ($bindId) { // 添加绑定
+                $this->bindPool[$bindId]['client'] = $client;
             }
         }
-
-        $sql = $data['sql'];
-        $client->query($sql, function ($client, $result) use ($data) {
+        $client->query($sql, function ($client, $result) use ($data, $sql) {
             if ($result === false) {
-                if ($client->errno == 2006 || $client->errno == 2013) {//断线重连
+                if ($client->errno == 2006 || $client->errno == 2013) {
+                    //断线重连
                     $this->reconnect($client);
-                    if (!isset($data['bind_id'])) {//非事务可以重新执行
+                    if (!isset($data['bind_id'])) {
+                        //非事务可以重新执行
                         $this->commands->unshift($data);
                     }
                     return;
-                } else {//发生错误
-                    if (isset($data['bind_id'])) {//事务的话要rollback
-                        $data['sql'] = 'rollback';
-                        $this->commands->push($data);
-                    }
-                    //设置错误信息
-                    $data['result']['error'] = "[mysql]:" . $client->error . "[sql]:" . $data['sql'];
                 }
+                // 其他错误情况,继续判断
+                if (isset($data['bind_id'])) {
+                    //事务的话要rollback
+                    $data['sql'] = 'rollback';
+                    $this->commands->push($data);
+                }
+                //设置错误信息
+                $data['result']['error'] = "[mysql]:" . $client->error . "[sql]:" . $sql;
             }
-            $sql = strtolower($data['sql']);
             if ($sql == 'begin') {
                 $data['result'] = $data['bind_id'];
             } else {
@@ -157,21 +156,20 @@ class MysqlAsynPool extends AsynPool implements IPoolCoroutine
             //给worker发消息
             $this->asynManager->sendMessageToWorker($this, $data);
 
-
             //不是绑定的连接就回归连接
             if (!isset($data['bind_id'])) {
                 //回归连接
-                if (((time() - $client->genTime) < 3600)
-                    || (($this->mysqlMaxCount + $this->waitConnectNum) <= 30)
-                ) {
+                if ($this->canReuse($client)) {
                     $this->pushToPool($client);
                 } else {
                     $client->close();
-                    $this->mysqlMaxCount--;
+                    $this->connectNum--;
                 }
-            } else {//事务
+            } else {
+                //事务
                 $bindId = $data['bind_id'];
-                if ($sql == 'commit' || $sql == 'rollback') {//结束事务
+                if ($sql == 'commit' || $sql == 'rollback') {
+                    //结束事务
                     $this->freeBind($bindId);
                 }
             }
@@ -206,8 +204,8 @@ class MysqlAsynPool extends AsynPool implements IPoolCoroutine
             } else {
                 $client->isClose = false;
                 if (!isset($client->client_id)) {
-                    $client->client_id = $this->mysqlMaxCount;
-                    $this->mysqlMaxCount++;
+                    $client->client_id = $this->connectNum;
+                    $this->connectNum++;
                 }
                 $this->pushToPool($client);
             }
@@ -227,7 +225,6 @@ class MysqlAsynPool extends AsynPool implements IPoolCoroutine
         if ($client != null) {
             $this->pushToPool($client);
         }
-        $this->bindPool[$bindId] = null;
         unset($this->bindPool[$bindId]);
     }
 
